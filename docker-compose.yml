@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - .:/workspace
+    command: /bin/bash -c "poetry install --no-root && poetry run streamlit run app.py"
+    environment:
+      - PYTHONPATH=/workspace
+    ports:
+      - "8501:8501" # Streamlit uses port 8501 by default
+    env_file:
+      - .env
