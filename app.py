@@ -23,7 +23,7 @@ st.set_page_config(
     page_title="CV Matcher",
     page_icon="📄",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -48,10 +48,6 @@ st.markdown("""
     /* Make header more prominent */
     h1 {
         color: #1E3A8A;
-    }
-    /* Improve sidebar styling */
-    .css-1adrfps {
-        background-color: #f8f9fa;
     }
     /* JSON code display */
     .json-code {
@@ -78,35 +74,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-with st.sidebar:
-    st.header("Settings")
-    
-    models = ["gpt-4o-mini", "gpt-4"]
-    default_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    if default_model not in models:
-        default_model = "gpt-4o-mini"
-    
-    selected_model = st.selectbox(
-        "Choose AI Model", 
-        models, 
-        index=models.index(default_model)
-    )
-    
-    temperature = st.slider(
-        "Temperature", 
-        min_value=0.0, 
-        max_value=1.0, 
-        value=0.7, 
-        step=0.1,
-        help="Higher values make output more random, lower values more deterministic"
-    )
-    
-    debug_mode = st.checkbox("Enable Debug Mode", value=False, help="Show additional debugging information")
-    
-    st.divider()
-    st.markdown("### About")
-    st.markdown("This app matches project requirements with team CVs using AI analysis.")
-    st.markdown("Built with Streamlit, Python, and OpenAI API.")
+# Define settings as variables instead of sidebar widgets
+default_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+selected_model = "gpt-4o-mini"  # Default to gpt-4o-mini
+temperature = 0.7
+debug_mode = False
 
 st.title("📄 CV Matching System")
 st.subheader("Match project requirements with team CVs")
@@ -209,6 +181,11 @@ project_description = st.text_area(
     placeholder="Paste the full project description here...",
     key="project_description"
 )
+
+# Option for switching model if needed
+col1, col2 = st.columns([3, 1])
+with col2:
+    selected_model = st.radio("AI Model", ["gpt-4o-mini", "gpt-4"], horizontal=True)
 
 if st.button("Match Project with Team CVs", type="primary"):
     if not project_description:
