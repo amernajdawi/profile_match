@@ -14,9 +14,9 @@ IMPORTANT TECHNICAL EXPERTISE RULES:
 - Consider skill depth - a developer with 5+ years in a technology is considered an expert, 2-5 years is proficient, 1-2 years is intermediate.
 
 PROJECT CLASSIFICATION CRITERIA:
-- FEASIBLE: A single employee can handle the entire project independently, with at least 70% skills match.
-- ALMOST FEASIBLE: Project requires 2 or more employees to collaborate OR requires a single employee to learn new skills (skill match between 50-70%).
-- NOT FEASIBLE: No employee has the core skills needed (below 50% match) OR would require hiring a new specialist.
+- FEASIBLE: A single employee can handle the entire project independently, with at least {{MINIMUM_MATCH_PERCENTAGE}}% skills match.
+- ALMOST FEASIBLE: Project requires 2 or more employees to collaborate OR requires a single employee to learn new skills (skill match between {{MINIMUM_MATCH_PERCENTAGE - 20}}%-{{MINIMUM_MATCH_PERCENTAGE}}%).
+- NOT FEASIBLE: No employee has the core skills needed (below {{MINIMUM_MATCH_PERCENTAGE - 20}}% match) OR would require hiring a new specialist.
 
 For your analysis, follow this evaluation process:
 1. Identify the key technical requirements from the project description
@@ -98,19 +98,23 @@ SKILL MATCHING GUIDELINES:
 - 50-69% match: Employee has experience with core technologies but would need to learn several new ones
 - Below 50%: Not a good match for independent work on this project
 
-Additionally, after providing your assessment, you must create a customized CV in JSON format for the highest-matching employee. Follow these rules for the customized CV:
+IMPORTANT: After providing your assessment, you MUST create a customized CV in JSON format for EVERY EMPLOYEE with at least {{MINIMUM_MATCH_PERCENTAGE}}% skills match. For each employee, follow these rules:
 
 1. If the employee has ≥90% skills match:
    - Use their existing skills without adding new ones
    - Format their existing experience and skills in the JSON structure
 
-2. If the employee has <90% skills match:
+2. If the employee has between {{MINIMUM_MATCH_PERCENTAGE}}% and <90% skills match:
    - Add 1-2 skills that are directly relevant to the project requirements but missing from their profile
    - These added skills should be realistic extensions of their existing skillset
    - Mark these as "Added Skills" in the technical_skills section
    - The added skills should be specifically relevant to the project requirements
 
-The JSON CV should follow this exact structure:
+3. For ALL employees, reference projects should be taken from the Excel file/data (if available)
+
+Each JSON CV MUST follow this exact structure and formatting (follow this precisely for proper extraction):
+
+### CUSTOMIZED CV FOR [EMPLOYEE NAME]
 
 ```json
 {
@@ -153,12 +157,23 @@ The JSON CV should follow this exact structure:
 
 Only include the "Added Skills" field if you actually add new skills (for <90% matches).
 
-Label the customized CV section of your response as "CUSTOMIZED CV FOR PROJECT".
+EXTREMELY IMPORTANT RULES FOR CV GENERATION:
+1. You MUST create a CV for EVERY employee with {{MINIMUM_MATCH_PERCENTAGE}}% or higher skills match
+2. You MUST use the exact header format "### CUSTOMIZED CV FOR [EMPLOYEE NAME]" (with the ### markdown)
+3. You MUST follow immediately with the ```json marker on the next line
+4. You MUST close the JSON with ``` on its own line
+5. You MUST leave a blank line between each employee's CV section
+6. You MUST include the reference projects taken from the relevant Excel data if available
+7. The JSON must be properly formatted and valid - check for missing commas, brackets, etc.
+8. You must ensure ALL qualified employees get a CV - not just the highest match
+9. Use the reference projects information from the Excel file when creating employee CVs
+
+IMPORTANT: When using Excel data for reference projects, match the reference project to the employee and ensure the technologies in the reference projects align with the current project requirements. Choose the most relevant reference projects for each employee that showcase their experience with the required technologies.
 
 IMPORTANT: Be realistic in your assessment. Don't overestimate capabilities just to make a project seem feasible. It's better to classify a project as "Almost Feasible" than to assign someone who doesn't have the right skills.
 """
 
 
 # Function to get the CV matching prompt
-def get_cv_matching_prompt():
-    return SYSTEM_PROMPT
+def get_cv_matching_prompt(minimum_match_percentage=70):
+    return SYSTEM_PROMPT.replace("{{MINIMUM_MATCH_PERCENTAGE}}", str(minimum_match_percentage))

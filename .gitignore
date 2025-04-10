@@ -43,4 +43,10 @@ poetry.lock
 Thumbs.db
 
 # Docker
-.docker/ 
+.docker/
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+~$*.xlsm
+~$*.xlsb 

@@ -127,6 +127,33 @@ def create_cv_pdf(json_data, output_path, debug=False):
                 elements.append(Paragraph(edu_text, styles['CVNormal']))
             elements.append(Spacer(1, 0.3*cm))
         
+        if "reference_projects" in json_data and json_data["reference_projects"]:
+            elements.append(Paragraph("REFERENCE PROJECTS", styles['SectionTitle']))
+            
+            for project in json_data["reference_projects"]:
+                project_name = str(project.get('name', '')).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                client = str(project.get('client', '')).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                description = str(project.get('description', '')).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                
+                project_text = f"<b>{project_name}</b>"
+                if client:
+                    project_text += f" for {client}"
+                
+                elements.append(Paragraph(project_text, styles['SubTitle']))
+                
+                if description:
+                    elements.append(Paragraph(description, styles['CVNormal']))
+                
+                if "technologies" in project and project["technologies"]:
+                    tech_list = [str(tech).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") 
+                               for tech in project["technologies"]]
+                    tech_text = "Technologies: " + ", ".join(tech_list)
+                    elements.append(Paragraph(tech_text, styles['CVNormal']))
+                
+                elements.append(Spacer(1, 0.2*cm))
+            
+            elements.append(Spacer(1, 0.1*cm))
+        
         if "work_experience" in json_data and json_data["work_experience"]:
             elements.append(Paragraph("WORK EXPERIENCE", styles['SectionTitle']))
             
@@ -160,6 +187,31 @@ def create_cv_pdf(json_data, output_path, debug=False):
                         leftIndent=20
                     )
                     elements.append(bullet_list)
+                
+                if "reference_projects" in job and job["reference_projects"]:
+                    elements.append(Paragraph("<b>Project Experience:</b>", styles['CVNormal']))
+                    
+                    for project in job["reference_projects"]:
+                        project_name = str(project.get('name', '')).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                        client = str(project.get('client', '')).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                        description = str(project.get('description', '')).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                        
+                        project_text = f"<b>{project_name}</b>"
+                        if client:
+                            project_text += f" for {client}"
+                        
+                        elements.append(Paragraph(project_text, styles['CVNormal']))
+                        
+                        if description:
+                            elements.append(Paragraph(description, styles['CVNormal']))
+                        
+                        if "technologies" in project and project["technologies"]:
+                            tech_list = [str(tech).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") 
+                                        for tech in project["technologies"]]
+                            tech_text = "Technologies: " + ", ".join(tech_list)
+                            elements.append(Paragraph(tech_text, styles['CVNormal']))
+                        
+                        elements.append(Spacer(1, 0.1*cm))
                 
                 elements.append(Spacer(1, 0.2*cm))
         
@@ -214,6 +266,56 @@ def extract_json_from_response(response_text, debug=False):
             print("Extracting JSON from response text")
             print(f"Response text (first 100 chars): {response_text[:100]}...")
         
+
+        employee_cv_pattern = r'CUSTOMIZED CV FOR ([^\n"]+?)[\s\n]*```json\s*([\s\S]*?)\s*```'
+        matches = re.findall(employee_cv_pattern, response_text, re.DOTALL)
+        
+        if matches and len(matches) > 0:
+            if debug:
+                print(f"Found {len(matches)} employee CVs in the response")
+            
+            all_cv_data = []
+            for employee_name, json_str in matches:
+                try:
+                    json_str = json_str.strip()
+                    cv_data = json.loads(json_str)
+                    if "name" not in cv_data or not cv_data["name"]:
+                        cv_data["name"] = employee_name.strip()
+                    all_cv_data.append(cv_data)
+                    if debug:
+                        print(f"Extracted CV data for {employee_name}")
+                except json.JSONDecodeError as e:
+                    if debug:
+                        print(f"Error parsing JSON for {employee_name}: {e}")
+                        print(f"JSON string: {json_str[:100]}...")
+            
+            if all_cv_data:
+                return all_cv_data
+        
+        alt_cv_pattern = r'### CUSTOMIZED CV FOR ([^\n"]+?)[\s\n]*```json\s*([\s\S]*?)\s*```'
+        alt_matches = re.findall(alt_cv_pattern, response_text, re.DOTALL)
+        
+        if alt_matches and len(alt_matches) > 0:
+            if debug:
+                print(f"Found {len(alt_matches)} employee CVs with alternative pattern")
+            
+            all_cv_data = []
+            for employee_name, json_str in alt_matches:
+                try:
+                    json_str = json_str.strip()
+                    cv_data = json.loads(json_str)
+                    if "name" not in cv_data or not cv_data["name"]:
+                        cv_data["name"] = employee_name.strip()
+                    all_cv_data.append(cv_data)
+                    if debug:
+                        print(f"Extracted CV data for {employee_name}")
+                except json.JSONDecodeError as e:
+                    if debug:
+                        print(f"Error parsing JSON for {employee_name}: {e}")
+            
+            if all_cv_data:
+                return all_cv_data
+        
         json_pattern = r'```json\s*(.*?)\s*```'
         json_match = re.search(json_pattern, response_text, re.DOTALL)
         
@@ -222,7 +324,7 @@ def extract_json_from_response(response_text, debug=False):
             if debug:
                 print(f"Found JSON block between markers: {json_str[:100]}...")
             try:
-                return json.loads(json_str)
+                return [json.loads(json_str)]
             except json.JSONDecodeError as e:
                 if debug:
                     print(f"Error parsing JSON from markers: {e}")
@@ -236,7 +338,7 @@ def extract_json_from_response(response_text, debug=False):
             if debug:
                 print(f"Found JSON in CUSTOMIZED CV section: {json_str[:100]}...")
             try:
-                return json.loads(json_str)
+                return [json.loads(json_str)]
             except json.JSONDecodeError as e:
                 if debug:
                     print(f"Error parsing JSON from CV section: {e}")
@@ -251,7 +353,7 @@ def extract_json_from_response(response_text, debug=False):
                 try:
                     parsed = json.loads(json_str)
                     if "name" in parsed and ("contact" in parsed or "education" in parsed or "work_experience" in parsed):
-                        return parsed
+                        return [parsed]
                 except Exception as e:
                     if debug:
                         print(f"Error parsing direct JSON object: {e}")
@@ -264,7 +366,9 @@ def extract_json_from_response(response_text, debug=False):
         return None
     except Exception as e:
         print(f"Error in extract_json_from_response: {str(e)}")
-        print(traceback.format_exc())
+        if debug:
+            import traceback
+            print(traceback.format_exc())
         return None
 
 def main():

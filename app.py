@@ -39,6 +39,7 @@ st.markdown("""
         border-radius: 10px;
         padding: 20px;
         margin-top: 20px;
+        color: #333333;
     }
     .stExpander {
         border: 1px solid #ddd;
@@ -49,6 +50,15 @@ st.markdown("""
     h1 {
         color: #1E3A8A;
     }
+    h2, h3, h4, h5, h6, p, li, span, label {
+        color: #333333;
+    }
+    /* All text in Streamlit elements should have proper contrast */
+    .stMarkdown, .stText, .stCode, .stTextArea, .stTextInput, .stButton, 
+    .stSelectbox, .stRadio, .stCheckbox, .stMultiselect, .stDateInput, 
+    .stTimeInput, .stNumberInput, .stFileUploader, .stDownloadButton {
+        color: #333333;
+    }
     /* JSON code display */
     .json-code {
         background-color: #f8f9fa;
@@ -58,6 +68,7 @@ st.markdown("""
         font-family: monospace;
         white-space: pre-wrap;
         overflow-x: auto;
+        color: #333333;
     }
     /* Error message styling */
     .error-message {
@@ -71,12 +82,31 @@ st.markdown("""
         font-family: monospace;
         font-size: 12px;
     }
+    .stTabs [data-baseweb="tab-panel"] {
+        color: #333333;
+    }
+    .stTable, table, td, th, tr {
+        color: #333333;
+    }
+    .stDownloadButton button {
+        color: #333333;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        color: #333333;
+    }
+    .stTabs [data-baseweb="tab-panel"] p, 
+    .stTabs [data-baseweb="tab-panel"] span,
+    .stTabs [data-baseweb="tab-panel"] div {
+        color: #333333;
+    }
+    button, .stButton button {
+        color: #333333;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Define settings as variables instead of sidebar widgets
 default_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-selected_model = "gpt-4o-mini"  # Default to gpt-4o-mini
+selected_model = "gpt-4o-mini"  
 temperature = 0.7
 debug_mode = False
 
@@ -97,6 +127,9 @@ def extract_text_from_pdf(pdf_file):
 def load_excel_data():
     excel_dir = "/workspace/excel"
     excel_files = glob.glob(f"{excel_dir}/*.xlsx") + glob.glob(f"{excel_dir}/*.xls")
+    
+    # Filter out temporary Excel files (those starting with ~$)
+    excel_files = [f for f in excel_files if not os.path.basename(f).startswith("~$")]
     
     excel_data_frames = {}
     excel_data_str = ""
@@ -182,7 +215,15 @@ project_description = st.text_area(
     key="project_description"
 )
 
-# Option for switching model if needed
+min_match_percentage = st.number_input(
+    "Minimum skills match percentage:", 
+    min_value=30, 
+    max_value=90,
+    value=70,
+    step=5,
+    help="Only employees with at least this percentage of skills match will be considered feasible. CVs with match % between this value and 90% will be enhanced."
+)
+
 col1, col2 = st.columns([3, 1])
 with col2:
     selected_model = st.radio("AI Model", ["gpt-4o-mini", "gpt-4"], horizontal=True)
@@ -220,7 +261,7 @@ if st.button("Match Project with Team CVs", type="primary"):
                 
                 excel_data = auto_excel_data
                 
-                cv_matching_system_prompt = get_cv_matching_prompt()
+                cv_matching_system_prompt = get_cv_matching_prompt(minimum_match_percentage=min_match_percentage)
                 
                 matching_prompt = (
                     f"Project Description:\n\n{project_description}\n\n"
@@ -238,12 +279,6 @@ if st.button("Match Project with Team CVs", type="primary"):
                 
                 st.session_state.last_matching_result = response
                 
-                cv_json = None
-                if PDF_GENERATION_AVAILABLE:
-                    cv_json = extract_json_from_response(response, debug=debug_mode)
-                    if cv_json:
-                        st.session_state.extracted_cv_json = cv_json
-                
                 st.markdown("### Matching Results:")
                 st.markdown(f'<div class="response-container">{response}</div>', unsafe_allow_html=True)
                 
@@ -253,47 +288,151 @@ if st.button("Match Project with Team CVs", type="primary"):
                     import traceback
                     st.markdown(f'<div class="error-message">{traceback.format_exc()}</div>', unsafe_allow_html=True)
 
-if "extracted_cv_json" in st.session_state and PDF_GENERATION_AVAILABLE:
-    with st.expander("Extracted Customized CV (JSON)", expanded=True):
-        cv_json = st.session_state.extracted_cv_json
-        st.markdown("The following JSON CV data was extracted from the AI response:")
-        st.markdown(f'<div class="json-code">{json.dumps(cv_json, indent=2)}</div>', unsafe_allow_html=True)
-        
-        json_str = json.dumps(cv_json, indent=2)
-        st.download_button(
-            label="Download JSON CV",
-            data=json_str,
-            file_name=f"{cv_json.get('name', 'cv').replace(' ', '_')}_generated.json",
-            mime="application/json"
-        )
-        
-        if st.button("Generate PDF CV"):
-            try:
-                with st.spinner("Generating PDF CV..."):
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                        pdf_path = create_cv_pdf(cv_json, tmp_file.name, debug=debug_mode)
-                        
-                        with open(pdf_path, "rb") as pdf_file:
-                            pdf_data = pdf_file.read()
-                        
-                        employee_name = cv_json.get('name', 'cv').replace(' ', '_')
-                        permanent_path = os.path.join(pdf_dir, f"{employee_name}_CV.pdf")
-                        create_cv_pdf(cv_json, permanent_path, debug=debug_mode)
-                        
-                        st.success(f"PDF CV generated successfully")
+if "last_matching_result" in st.session_state:
+    with st.spinner(f"Analyzing CVs and matching with project requirements..."):
+        try:
+            if PDF_GENERATION_AVAILABLE:
+                enable_debug = st.checkbox("Enable debug mode for CV extraction", value=False)
+                debug_for_extraction = debug_mode or enable_debug
+                
+                st.info("Extracting customized CVs from the response...")
+                cv_json_list = extract_json_from_response(st.session_state.last_matching_result, debug=debug_for_extraction)
+                
+                if cv_json_list and len(cv_json_list) > 0:
+                    st.session_state.extracted_cv_json_list = cv_json_list
+                    st.success(f"Found {len(cv_json_list)} suitable employee CV(s)")
+                else:
+                    st.warning("No CV data could be extracted from the response. This could be due to formatting issues in the AI response.")
+                    
+                    if debug_for_extraction:
+                        st.markdown("### Response for debugging:")
+                        st.text_area("Response text", value=st.session_state.last_matching_result, height=300)
+        except Exception as e:
+            st.error(f"Error extracting CV data: {str(e)}")
+            if debug_mode:
+                import traceback
+                st.markdown(f'<div class="error-message">{traceback.format_exc()}</div>', unsafe_allow_html=True)
+
+if "extracted_cv_json_list" in st.session_state and PDF_GENERATION_AVAILABLE:
+    cv_json_list = st.session_state.extracted_cv_json_list
+    
+    with st.expander("Extracted Customized CVs", expanded=True):
+        if len(cv_json_list) > 1:
+            tabs = st.tabs([cv_data.get('name', f'Employee {i+1}') for i, cv_data in enumerate(cv_json_list)])
+            
+            for i, (tab, cv_json) in enumerate(zip(tabs, cv_json_list)):
+                with tab:
+                    st.markdown(f"### {cv_json.get('name', f'Employee {i+1}')} CV Data:")
+                    st.markdown(f'<div class="json-code">{json.dumps(cv_json, indent=2)}</div>', unsafe_allow_html=True)
+                    
+                    json_str = json.dumps(cv_json, indent=2)
+                    employee_name = cv_json.get('name', f'employee_{i+1}').replace(' ', '_')
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
                         st.download_button(
-                            label="Download PDF CV",
-                            data=pdf_data,
-                            file_name=f"{employee_name}_CV.pdf",
-                            mime="application/pdf"
+                            label=f"Download {employee_name} JSON CV",
+                            data=json_str,
+                            file_name=f"{employee_name}_CV.json",
+                            mime="application/json"
                         )
-            except Exception as e:
-                error_msg = str(e)
-                st.error(f"Error generating PDF: {error_msg}")
-                if debug_mode:
-                    import traceback
-                    st.markdown(f'<div class="error-message">{traceback.format_exc()}</div>', unsafe_allow_html=True)
-                    st.info("Try running the script from the command line with: python json_to_pdf.py --input your_json_file.json --debug")
+                    
+                    with col2:
+                        pdf_button_key = f"gen_pdf_{i}"
+                        if st.button(f"Generate PDF CV for {employee_name}", key=pdf_button_key):
+                            try:
+                                with st.spinner(f"Generating PDF CV for {employee_name}..."):
+                                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                                        pdf_path = create_cv_pdf(cv_json, tmp_file.name, debug=(debug_mode or st.checkbox("Enable debug for PDF generation", key=f"debug_pdf_{i}")))
+                                        
+                                        with open(pdf_path, "rb") as pdf_file:
+                                            pdf_data = pdf_file.read()
+                                        
+                                        permanent_path = os.path.join(pdf_dir, f"{employee_name}_CV.pdf")
+                                        create_cv_pdf(cv_json, permanent_path, debug=debug_mode)
+                                        
+                                        st.success(f"PDF CV for {employee_name} generated successfully")
+                                        st.download_button(
+                                            label=f"Download {employee_name} PDF CV",
+                                            data=pdf_data,
+                                            file_name=f"{employee_name}_CV.pdf",
+                                            mime="application/pdf"
+                                        )
+                            except Exception as e:
+                                error_msg = str(e)
+                                st.error(f"Error generating PDF: {error_msg}")
+                                if debug_mode:
+                                    import traceback
+                                    st.markdown(f'<div class="error-message">{traceback.format_exc()}</div>', unsafe_allow_html=True)
+        else:
+            cv_json = cv_json_list[0]
+            st.markdown("The following JSON CV data was extracted from the AI response:")
+            st.markdown(f'<div class="json-code">{json.dumps(cv_json, indent=2)}</div>', unsafe_allow_html=True)
+            
+            json_str = json.dumps(cv_json, indent=2)
+            employee_name = cv_json.get('name', 'cv').replace(' ', '_')
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.download_button(
+                    label="Download JSON CV",
+                    data=json_str,
+                    file_name=f"{employee_name}_CV.json",
+                    mime="application/json"
+                )
+            
+            with col2:
+                if st.button("Generate PDF CV"):
+                    try:
+                        with st.spinner("Generating PDF CV..."):
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                                pdf_path = create_cv_pdf(cv_json, tmp_file.name, debug=debug_mode)
+                                
+                                with open(pdf_path, "rb") as pdf_file:
+                                    pdf_data = pdf_file.read()
+                                
+                                permanent_path = os.path.join(pdf_dir, f"{employee_name}_CV.pdf")
+                                create_cv_pdf(cv_json, permanent_path, debug=debug_mode)
+                                
+                                st.success(f"PDF CV generated successfully")
+                                st.download_button(
+                                    label="Download PDF CV",
+                                    data=pdf_data,
+                                    file_name=f"{employee_name}_CV.pdf",
+                                    mime="application/pdf"
+                                )
+                    except Exception as e:
+                        error_msg = str(e)
+                        st.error(f"Error generating PDF: {error_msg}")
+                        if debug_mode:
+                            import traceback
+                            st.markdown(f'<div class="error-message">{traceback.format_exc()}</div>', unsafe_allow_html=True)
+                            st.info("Try running the script from the command line with: python json_to_pdf.py --input your_json_file.json --debug")
+        
+        if len(cv_json_list) > 1:
+            if st.button("Generate PDFs for All Employees", type="primary"):
+                try:
+                    with st.spinner("Generating PDFs for all employees..."):
+                        pdf_paths = []
+                        for cv_json in cv_json_list:
+                            employee_name = cv_json.get('name', 'cv').replace(' ', '_')
+                            permanent_path = os.path.join(pdf_dir, f"{employee_name}_CV.pdf")
+                            create_cv_pdf(cv_json, permanent_path, debug=debug_mode)
+                            pdf_paths.append(permanent_path)
+                        
+                        st.success(f"Generated {len(pdf_paths)} PDF CVs successfully")
+                        st.info(f"PDF files saved to {pdf_dir} directory")
+                        
+                        st.markdown("### Generated PDF files:")
+                        for path in pdf_paths:
+                            filename = os.path.basename(path)
+                            st.markdown(f"- {filename}")
+                except Exception as e:
+                    error_msg = str(e)
+                    st.error(f"Error generating PDFs: {error_msg}")
+                    if debug_mode:
+                        import traceback
+                        st.markdown(f'<div class="error-message">{traceback.format_exc()}</div>', unsafe_allow_html=True)
 
 if "last_matching_result" in st.session_state:
     st.download_button(
