@@ -107,8 +107,7 @@ IMPORTANT: After providing your assessment, you MUST create a customized CV in J
 2. If the employee has between {{MINIMUM_MATCH_PERCENTAGE}}% and <90% skills match:
    - Add 1-2 skills that are directly relevant to the project requirements but missing from their profile
    - These added skills should be realistic extensions of their existing skillset
-   - Mark these as "Added Skills" in the technical_skills section
-   - The added skills should be specifically relevant to the project requirements
+   - Include these skills naturally within the appropriate technical skills categories without marking them as added
 
 3. For ALL employees, reference projects should be taken from the Excel file/data (if available)
 
@@ -149,13 +148,10 @@ Each JSON CV MUST follow this exact structure and formatting (follow this precis
     ],
     "technical_skills": {
         "Skill Category 1": "Description of proficiency in this skill category",
-        "Skill Category 2": "Description of proficiency in this skill category",
-        "Added Skills": "Skills added to match project requirements: [skill1, skill2]"
+        "Skill Category 2": "Description of proficiency in this skill category"
     }
 }
 ```
-
-Only include the "Added Skills" field if you actually add new skills (for <90% matches).
 
 EXTREMELY IMPORTANT RULES FOR CV GENERATION:
 1. You MUST create a CV for EVERY employee with {{MINIMUM_MATCH_PERCENTAGE}}% or higher skills match
@@ -174,6 +170,5 @@ IMPORTANT: Be realistic in your assessment. Don't overestimate capabilities just
 """
 
 
-# Function to get the CV matching prompt
 def get_cv_matching_prompt(minimum_match_percentage=70):
     return SYSTEM_PROMPT.replace("{{MINIMUM_MATCH_PERCENTAGE}}", str(minimum_match_percentage))

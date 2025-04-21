@@ -1,0 +1,27 @@
+{
+  "name": "Mohammed Sawas",
+  "projects": [
+    {
+      "project_number": 1,
+      "project_name": "RE/MAX",
+      "similarity": 60,
+      "technologies_used": [
+        "React (Bootstrap)",
+        "Laravel",
+        "MariaDB",
+        "nginx",
+        "AWS"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [
+        "Python",
+        "Docker",
+        "Kubernetes",
+        "CI/CD",
+        "Git"
+      ],
+      "enhanced_similarity": 90,
+      "description": "Konzeption und vollständige Entwicklung des Intranets für RE/MAX Europa"
+    }
+  ]
+}

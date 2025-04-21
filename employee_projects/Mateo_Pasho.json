@@ -1,0 +1,29 @@
+{
+  "name": "Mateo Pasho",
+  "projects": [
+    {
+      "project_number": 8,
+      "project_name": "REWE Digital",
+      "similarity": 80,
+      "technologies_used": [
+        "Magnolia",
+        "JAVA",
+        "MongoDB",
+        "HTML5 (Bootstrap)",
+        "Angular 6",
+        "React Native",
+        "AWS"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [
+        "Python",
+        "Docker",
+        "Kubernetes",
+        "CI/CD",
+        "Git"
+      ],
+      "enhanced_similarity": 90,
+      "description": "Backend- und App-Entwicklung für REWE Digital Deutschland"
+    }
+  ]
+}

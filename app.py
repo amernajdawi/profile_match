@@ -8,8 +8,10 @@ import json
 import re
 import tempfile
 import hashlib
+import subprocess
 from openai_backend import OpenAIBackend
 from cv_matching_prompt import get_cv_matching_prompt
+from past_project_analyzer import analyze_past_projects, extract_matched_employees, post_process_response
 
 try:
     from json_to_pdf import create_cv_pdf, extract_json_from_response
@@ -20,6 +22,83 @@ except ImportError:
     st.warning(
         "PDF generation functionality is not available. Please install reportlab package."
     )
+
+def extract_json_from_analysis(analysis_text):
+    json_pattern = r'```json\s*(.*?)```'
+    match = re.search(json_pattern, analysis_text, re.DOTALL)
+    
+    if match:
+        json_str = match.group(1).strip()
+        try:
+            json_data = json.loads(json_str)
+            return json_data
+        except json.JSONDecodeError as e:
+            st.error(f"Error parsing JSON: {str(e)}")
+            return None
+    
+    return None
+
+def save_employee_json_files(json_data):
+    if not json_data or 'employees' not in json_data:
+        return []
+    
+    os.makedirs("employee_projects", exist_ok=True)
+    file_paths = []
+    
+    for employee in json_data['employees']:
+        if 'name' not in employee:
+            continue
+            
+        employee_name = employee['name']
+        safe_name = re.sub(r'[^\w\s-]', '', employee_name).strip().replace(' ', '_')
+        
+        file_path = f"employee_projects/{safe_name}.json"
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(employee, f, ensure_ascii=False, indent=2)
+            
+        file_paths.append(file_path)
+        
+    return file_paths
+
+def generate_employee_project_pdfs(json_data=None, json_files=None):
+    try:
+        if os.path.isfile("/workspace/employee_projects_to_pdf.py"):
+            pdf_paths = []
+            
+            if json_data and 'employees' in json_data:
+                temp_json_path = "/workspace/temp_employee_projects.json"
+                with open(temp_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(json_data, f, ensure_ascii=False, indent=2)
+                
+                command = f"python3 /workspace/employee_projects_to_pdf.py --input {temp_json_path}"
+                process = subprocess.run(command, shell=True, capture_output=True, text=True)
+                
+                if process.returncode != 0:
+                    st.error(f"Error generating PDFs: {process.stderr}")
+                    return []
+                
+                for line in process.stdout.splitlines():
+                    if line.strip().endswith(".pdf"):
+                        pdf_paths.append(line.strip())
+                
+                if os.path.exists(temp_json_path):
+                    os.remove(temp_json_path)
+                    
+            elif json_files:
+                for json_file in json_files:
+                    base_name = os.path.basename(json_file).replace('.json', '')
+                    pdf_path = f"employee_projects_pdf/{base_name}_projects.pdf"
+                    if os.path.exists(pdf_path):
+                        pdf_paths.append(pdf_path)
+            
+            return pdf_paths
+        else:
+            st.warning("employee_projects_to_pdf.py script not found. PDF generation not available.")
+            return []
+    except Exception as e:
+        st.error(f"Error generating employee project PDFs: {str(e)}")
+        return []
 
 backend = OpenAIBackend()
 
@@ -122,7 +201,6 @@ st.subheader("Match project requirements with team CVs")
 
 
 def get_file_hash(file_path):
-    """Generate a hash for a file to use in cache invalidation"""
     try:
         with open(file_path, "rb") as f:
             file_hash = hashlib.md5(f.read()).hexdigest()
@@ -132,7 +210,6 @@ def get_file_hash(file_path):
 
 
 def get_directory_hash(directory, pattern="*"):
-    """Generate a hash based on files in a directory to use in cache invalidation"""
     if not os.path.exists(directory):
         return "directory_not_found"
 
@@ -147,7 +224,6 @@ def get_directory_hash(directory, pattern="*"):
 
 @st.cache_data
 def extract_text_from_pdf(pdf_file, file_hash=None):
-    """Extract text from PDF with caching"""
     try:
         pdf_reader = PyPDF2.PdfReader(pdf_file)
         text = ""
@@ -161,7 +237,6 @@ def extract_text_from_pdf(pdf_file, file_hash=None):
 
 @st.cache_data
 def load_excel_data(directory_hash=None):
-    """Load Excel data with cache invalidation based on directory hash"""
     excel_dir = "/workspace/excel"
     excel_files = glob.glob(f"{excel_dir}/*.xlsx") + glob.glob(f"{excel_dir}/*.xls")
 
@@ -277,6 +352,15 @@ min_match_percentage = st.number_input(
     help="Only employees with at least this percentage of skills match will be considered feasible. CVs with match % between this value and 90% will be enhanced.",
 )
 
+past_project_min_similarity = st.number_input(
+    "Minimum past project similarity (%):",
+    min_value=50,
+    max_value=90,
+    value=60,
+    step=5,
+    help="Only past projects with at least this percentage similarity to the current project requirements will be considered.",
+)
+
 col1, col2 = st.columns([3, 1])
 with col2:
     selected_model = st.radio("AI Model", ["gpt-4o-mini", "gpt-4"], horizontal=True)
@@ -349,8 +433,102 @@ if st.button("Match Project with Team CVs", type="primary"):
                     model=selected_model,
                     system_prompt=cv_matching_system_prompt,
                 )
-
+                
                 st.session_state.last_matching_result = response
+                
+                # Analyze past projects
+                if past_project_min_similarity > 0:
+                    with st.spinner("Analyzing past projects..."):
+                        try:
+                            # Pass the CV matching results to the past project analyzer
+                            past_project_analysis = analyze_past_projects(
+                                project_description, 
+                                min_similarity=past_project_min_similarity/100.0,
+                                matching_result=response
+                            )
+                            
+                            # Add debug output to show what's happening
+                            st.info(f"Raw past project analysis result received. Length: {len(past_project_analysis) if past_project_analysis else 0}")
+                            
+                            if past_project_analysis and "No past project data found" not in past_project_analysis:
+                                # Extract matched employees from the CV matching results
+                                matched_employees = extract_matched_employees(response)
+                                
+                                # Add debug output for matched employees
+                                st.info(f"Matched employees extracted: {len(matched_employees) if matched_employees else 0}")
+                                if matched_employees:
+                                    st.info(f"Employee names: {', '.join([emp['name'] for emp in matched_employees])}")
+                                
+                                # Fall back to hard-coded employees if none found
+                                if not matched_employees or len(matched_employees) == 0:
+                                    st.warning("No employees found in the response. Cannot proceed with employee assignment.")
+                                    st.info("Please try again with a different project description or check your CV data.")
+                                    st.stop()  # Stop execution of the current app run
+                                
+                                # Post-process the response to add matched employees to each project
+                                past_project_analysis = post_process_response(past_project_analysis, matched_employees)
+                                
+                                # Extract JSON from response
+                                json_data = extract_json_from_analysis(past_project_analysis)
+                                
+                                if json_data:
+                                    # Save individual JSON files for each employee
+                                    file_paths = save_employee_json_files(json_data)
+                                    
+                                    # Display information about created files
+                                    if file_paths:
+                                        st.success(f"Created {len(file_paths)} employee JSON files:")
+                                        
+                                        # Generate PDF files for each employee
+                                        pdf_paths = generate_employee_project_pdfs(json_data=json_data)
+                                        
+                                        # Create columns for JSON and PDF downloads
+                                        for i, path in enumerate(file_paths):
+                                            col1, col2 = st.columns(2)
+                                            
+                                            # Display JSON file info and download button
+                                            with col1:
+                                                st.code(path)
+                                                with open(path, 'r') as f:
+                                                    file_content = f.read()
+                                                
+                                                employee_name = os.path.basename(path).replace('.json', '').replace('_', ' ')
+                                                st.download_button(
+                                                    label=f"Download {employee_name}'s JSON",
+                                                    data=file_content,
+                                                    file_name=os.path.basename(path),
+                                                    mime="application/json"
+                                                )
+                                            
+                                            with col2:
+                                                pdf_path = f"employee_projects_pdf/{os.path.basename(path).replace('.json', '_projects.pdf')}"
+                                                
+                                                if os.path.exists(pdf_path):
+                                                    st.code(pdf_path)
+                                                    with open(pdf_path, 'rb') as f:
+                                                        pdf_content = f.read()
+                                                    
+                                                    st.download_button(
+                                                        label=f"Download {employee_name}'s PDF",
+                                                        data=pdf_content,
+                                                        file_name=os.path.basename(pdf_path),
+                                                        mime="application/pdf"
+                                                    )
+                                else:
+                                    st.warning("No JSON data found in the response. Check if the AI correctly formatted the output.")
+                                
+                                st.session_state.past_project_analysis = past_project_analysis
+                                st.success(f"Past project analysis completed with {len(matched_employees)} employees distributed across matching projects")
+                                
+                            else:
+                                st.warning("No similar past projects found or no project data available")
+                                st.code(past_project_analysis[:500] + "..." if past_project_analysis and len(past_project_analysis) > 500 else past_project_analysis)
+                                
+                        except Exception as e:
+                            st.error(f"Error analyzing past projects: {str(e)}")
+                            import traceback
+                            st.code(traceback.format_exc())
+                            st.info("Proceeding with CV matching results only.")
 
                 st.markdown("### Matching Results:")
                 st.markdown(
@@ -367,6 +545,20 @@ if st.button("Match Project with Team CVs", type="primary"):
                         f'<div class="error-message">{traceback.format_exc()}</div>',
                         unsafe_allow_html=True,
                     )
+
+if "past_project_analysis" in st.session_state:
+    st.markdown("### Past Project Analysis:")
+    st.markdown(
+        f'<div class="response-container">{st.session_state.past_project_analysis}</div>',
+        unsafe_allow_html=True,
+    )
+    
+    st.download_button(
+        label="Download Past Project Analysis",
+        data=st.session_state.past_project_analysis,
+        file_name="past_project_analysis.txt",
+        mime="text/plain",
+    )
 
 if "last_matching_result" in st.session_state:
     with st.spinner(f"Analyzing CVs and matching with project requirements..."):

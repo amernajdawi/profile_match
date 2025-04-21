@@ -1,0 +1,28 @@
+{
+  "name": "Christian Tu",
+  "projects": [
+    {
+      "project_number": 3,
+      "project_name": "ANALOG DEVICES",
+      "similarity": 70,
+      "technologies_used": [
+        "HTML5 (Bootstrap)",
+        "nodeJS",
+        "MongoDB",
+        "React",
+        "Bitbucket Pipelines",
+        "Docker",
+        "Kubernetes"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [
+        "Python",
+        "AWS",
+        "CI/CD",
+        "Git"
+      ],
+      "enhanced_similarity": 90,
+      "description": "Backend- und Infrastrukturentwicklung inkl. DevOps für eine Webplattform"
+    }
+  ]
+}

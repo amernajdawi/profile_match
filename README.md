@@ -6,6 +6,7 @@ A system that matches CVs with project requirements to identify suitable candida
 
 - **CV Processing**: Convert PDF CVs to structured JSON format
 - **Project Matching**: Match project requirements with team CVs
+- **Past Project Analysis**: Match new project requirements with employees' past projects
 - **CV Enhancement**: Generate customized CVs for qualified candidates
 - **PDF Generation**: Create PDF CVs
 - **Web Interface**:  Streamlit interface
@@ -16,6 +17,7 @@ A system that matches CVs with project requirements to identify suitable candida
 - `cv_to_json.py` - Converts PDF CVs to JSON format (for using them in the app)
 - `cv_matching_prompt.py` - AI prompt for matching CVs to projects 
 - `process_cv_matches.py` - Backend logic for CV matching
+- `project_matcher.py` - Analyzes similarity between new projects and past projects
 - `json_to_pdf.py` - Converts CV JSON data to formatted PDF files (step will be after LLM Model)
 - `openai_backend.py` - Handles OpenAI API interactions
 
@@ -23,11 +25,12 @@ A system that matches CVs with project requirements to identify suitable candida
 
 1. Place CV PDFs in the `CV_data` directory
 2. Run `python cv_to_json.py` to convert them to JSON
-3. Start the application with `docker compose up` in CMD or Terminal 
-4. In web interface enter your project description `http://localhost:8501/`
-5. Set the minimum match percentage and the default: 70% 
-6. Click "Match Project with Team CVs"
-7. View results and download generated PDFs
+3. Ensure your past project data is in an Excel file in the `excel` directory with a "Projekte" column
+4. Start the application with `docker compose up` in CMD or Terminal 
+5. In web interface enter your project description `http://localhost:8501/`
+6. Set the minimum match percentage (default: 70%) and past project similarity (default: 60%)
+7. Click "Match Project with Team CVs"
+8. View results and download generated PDFs
 
 ## Requirements
 
@@ -38,9 +41,7 @@ A system that matches CVs with project requirements to identify suitable candida
 - `CV_data/` - PDF CV files
 - `CV_json/` - JSON CV data
 - `CV_pdf/` - Generated PDF files
-- `excel/` - Reference project data
-
-
+- `excel/` - Reference project data and past project history
 
 ## process_cv_matches.py
 

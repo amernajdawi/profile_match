@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-JSON to PDF CV Converter
-
-This script converts JSON CV data to a professionally formatted PDF file.
-It takes the JSON output from the AI model and creates a well-designed CV PDF.
-"""
 
 import os
 import json
