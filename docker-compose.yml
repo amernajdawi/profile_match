@@ -5,7 +5,7 @@ services:
       dockerfile: .devcontainer/Dockerfile
     volumes:
       - .:/workspace
-    command: /bin/bash -c "poetry install --no-root && poetry run streamlit run app.py"
+    command: /bin/bash -c "poetry lock && poetry install --no-root && poetry run streamlit run app.py"
     environment:
       - PYTHONPATH=/workspace
     ports:
