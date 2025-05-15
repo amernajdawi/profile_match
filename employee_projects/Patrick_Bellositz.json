@@ -1,0 +1,27 @@
+{
+  "name": "Patrick Bellositz",
+  "projects": [
+    {
+      "project_number": 5,
+      "project_name": "aazzur",
+      "similarity": 70,
+      "technologies_used": [
+        "Magnolia",
+        "JAVA",
+        "MongoDB",
+        "H2DB",
+        "HTML5 (Bootstrap)",
+        "React Native",
+        "Bitbucket",
+        "Docker",
+        "CI/CD",
+        "JUnit",
+        "REST-Services"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [],
+      "enhanced_similarity": 70,
+      "description": "Komplette Systemarchitektur & App-Entwicklung für ein FinTech-Projekt"
+    }
+  ]
+}

@@ -105,14 +105,25 @@ def extract_matched_employees(matching_result):
     if not matching_result:
         return []
         
-    pattern = r'(\w+\s+\w+)\s*-\s*(\d+)%\s*-\s*(.+?)(?=\n\n|\n\w|\Z)'
+    # Regex pattern to find lines like:
+    # - Christian Tu - 40% - ASP.NET, SharePoint, ...
+    # Accommodates optional leading hyphen and whitespace.
+    # Name capture is now more flexible: ([\w\s.-]+?)
+    # Skills capture stops before a newline that is NOT immediately followed by a continuation of skills (e.g. indented list)
+    # or a newline followed by another hyphen (next employee) or end of string or BARRIERS.
+    pattern = r'^-?\s*([\w\s\'.-]+?)\s*-\s*(\d+)%\s*-\s*(.+?)(?=\n(?:\s*-\s*[\w\s\'-.]+\s*-|BARRIERS:|\Z)|\Z)'
     
-    matches = re.findall(pattern, matching_result, re.DOTALL)
+    # Find all matches; re.MULTILINE allows ^ to match start of each line
+    matches = re.findall(pattern, matching_result, re.MULTILINE | re.DOTALL)
     
     employees = []
     for match in matches:
         if len(match) >= 3:
             name = match[0].strip()
+            # Further clean name if it was captured with a leading '-' from a previous version or error
+            if name.startswith('-'):
+                name = name[1:].strip()
+            
             match_percentage = match[1].strip()
             skills = match[2].strip()
             

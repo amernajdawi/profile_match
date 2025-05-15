@@ -1,0 +1,28 @@
+{
+  "name": "Christian Tu",
+  "projects": [
+    {
+      "project_number": 6,
+      "project_name": "LFRZ/BRZ",
+      "similarity": 70,
+      "technologies_used": [
+        "HTML5",
+        "Angular 4",
+        "WebSocket",
+        "JAVA",
+        "Magnolia",
+        "Docker",
+        "Git",
+        "REST-Services",
+        "JUnit",
+        "CI/CD",
+        "Microservices",
+        "DSGVO"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [],
+      "enhanced_similarity": 70,
+      "description": "DSGVO-konforme Web-Applikation für Behörden"
+    }
+  ]
+}

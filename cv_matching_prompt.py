@@ -10,7 +10,11 @@ Shkëlqim Zahiti: Senior Developer who is a Laravel expert and also proficient i
 
 IMPORTANT TECHNICAL EXPERTISE RULES:
 - For Java EE projects, always consider Christian Tu and Patrick Bellositz as highly qualified, with at least 85% skills match. They both have the necessary Java enterprise application experience, even if not explicitly mentioned in their CVs.
-- When evaluating projects, consider both direct skill matches and transferable skills (e.g., experience with one frontend framework can indicate ability to learn another).
+- When evaluating projects, consider both direct skill matches and transferable skills. For example:
+    - Experience with a major underlying technology (e.g., .NET, C#) should be seen as a strong foundation for specific frameworks built upon it (e.g., ASP.NET MVC, SharePoint development if .NET skills are very strong and project context allows for some ramp-up).
+    - Proficiency in modern JavaScript and frameworks (like React, Angular, Vue.js) can indicate an ability to adapt to other JavaScript-based environments (like SharePoint Framework - SPFx), especially if combined with general web development expertise.
+    - Experience with scripting languages and system administration can be a plus when considering skills like PowerShell, even if PowerShell itself is not explicitly listed.
+- Explicit experience with the exact technologies mentioned in the project requirement is always preferred and should result in a higher match score. However, the absence of an exact keyword should not automatically lead to a 0% match if strong foundational or highly transferable skills are clearly present and relevant.
 - Consider skill depth - a developer with 5+ years in a technology is considered an expert, 2-5 years is proficient, 1-2 years is intermediate.
 
 PROJECT CLASSIFICATION CRITERIA:
@@ -98,7 +102,13 @@ SKILL MATCHING GUIDELINES:
 - 50-69% match: Employee has experience with core technologies but would need to learn several new ones
 - Below 50%: Not a good match for independent work on this project
 
-IMPORTANT: After providing your assessment, you MUST create a customized CV in JSON format for EVERY EMPLOYEE with at least {{MINIMUM_MATCH_PERCENTAGE}}% skills match. For each employee, follow these rules:
+IMPORTANT: After providing your assessment, you MUST create a customized CV in JSON format for EVERY EMPLOYEE with at least {{MINIMUM_MATCH_PERCENTAGE}}% skills match.
+
+IF NO EMPLOYEES MEET THE {{MINIMUM_MATCH_PERCENTAGE}}% THRESHOLD (as determined by your SUITABLE EMPLOYEES list):
+- You MUST have ALREADY included the sentence "No employees meet the required {{MINIMUM_MATCH_PERCENTAGE}}% skills match for customized CV generation." as part of your main response structure (see above).
+- In this case, DO NOT attempt to generate any "### CUSTOMIZED CV FOR..." sections or any JSON CV output.
+
+IF ONE OR MORE EMPLOYEES MEET THE {{MINIMUM_MATCH_PERCENTAGE}}% THRESHOLD, then for each such qualified employee, you MUST generate a customized CV. Follow these rules STRICTLY for each CV:
 
 1. If the employee has ≥90% skills match:
    - Use their existing skills without adding new ones
@@ -153,20 +163,19 @@ Each JSON CV MUST follow this exact structure and formatting (follow this precis
 }
 ```
 
-EXTREMELY IMPORTANT RULES FOR CV GENERATION:
-1. You MUST create a CV for EVERY employee with {{MINIMUM_MATCH_PERCENTAGE}}% or higher skills match
-2. You MUST use the exact header format "### CUSTOMIZED CV FOR [EMPLOYEE NAME]" (with the ### markdown)
-3. You MUST follow immediately with the ```json marker on the next line
-4. You MUST close the JSON with ``` on its own line
-5. You MUST leave a blank line between each employee's CV section
-6. You MUST include the reference projects taken from the relevant Excel data if available
-7. The JSON must be properly formatted and valid - check for missing commas, brackets, etc.
-8. You must ensure ALL qualified employees get a CV - not just the highest match
-9. Use the reference projects information from the Excel file when creating employee CVs
+EXTREMELY IMPORTANT RULES FOR CV GENERATION (RECAP - THESE ARE CRITICAL FOR SUCCESSFUL PROCESSING):
+1. You MUST create a CV for EVERY employee with {{MINIMUM_MATCH_PERCENTAGE}}% or higher skills match (UNLESS no employees qualify, as stated in the 'IF NO EMPLOYEES MEET...' section above).
+2. You MUST use the exact header format "### CUSTOMIZED CV FOR [EMPLOYEE NAME]" (with the ### markdown). This header is ABSOLUTELY ESSENTIAL for the system to parse the CVs.
+3. You MUST follow immediately with the ```json marker on the next line after the header.
+4. The JSON content itself MUST be 100% valid. Before outputting, mentally double-check for common errors like missing commas, incorrect bracket usage, or unescaped special characters within strings.
+5. You MUST close the JSON content with ``` on its own line.
+6. You MUST leave one blank line between the end of one employee's CV section (after the closing ```) and the start of the next employee's CV section (the "### CUSTOMIZED CV FOR..." header), if multiple CVs are generated.
+7. You MUST include the reference projects taken from the relevant Excel data if available, within the JSON structure as specified (e.g., in work_experience or a dedicated reference_projects field if appropriate based on the main JSON schema).
+8. Ensure ALL qualified employees get a CV generated according to these rules - not just the highest match.
+9. Use the reference projects information from the Excel file when creating employee CVs, matching them appropriately.
+10. FINAL CHECK: Before concluding your entire response, quickly review ALL "### CUSTOMIZED CV FOR..." sections you have generated to ensure they meticulously follow all the formatting rules above, including the JSON structure example. Errors in this part will prevent the system from using your output.
 
 IMPORTANT: When using Excel data for reference projects, match the reference project to the employee and ensure the technologies in the reference projects align with the current project requirements. Choose the most relevant reference projects for each employee that showcase their experience with the required technologies.
-
-IMPORTANT: Be realistic in your assessment. Don't overestimate capabilities just to make a project seem feasible. It's better to classify a project as "Almost Feasible" than to assign someone who doesn't have the right skills.
 """
 
 

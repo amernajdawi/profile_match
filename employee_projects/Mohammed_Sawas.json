@@ -1,0 +1,24 @@
+{
+  "name": "Mohammed Sawas",
+  "projects": [
+    {
+      "project_number": 20,
+      "project_name": "Geizhals App Evaluierung",
+      "similarity": 70,
+      "technologies_used": [
+        "Java",
+        "HTML5",
+        "Cordova",
+        "Docker",
+        "REST-Services",
+        "CI/CD",
+        "JUnit",
+        "Microservices"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [],
+      "enhanced_similarity": 70,
+      "description": "Performanceanalyse: native Java vs. HTML5 Hybrid"
+    }
+  ]
+}

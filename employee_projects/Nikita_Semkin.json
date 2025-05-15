@@ -1,0 +1,25 @@
+{
+  "name": "Nikita Semkin",
+  "projects": [
+    {
+      "project_number": 10,
+      "project_name": "A1",
+      "similarity": 70,
+      "technologies_used": [
+        "JAVA",
+        "Spring",
+        "AngularJS",
+        "Jenkins",
+        "MySQL",
+        "Docker",
+        "REST-Services",
+        "CI/CD",
+        "Microservices"
+      ],
+      "matching_technologies": [],
+      "enhanced_technologies": [],
+      "enhanced_similarity": 70,
+      "description": "Entwicklung von WebSocket-Kommunikation & Administration einer georedundanten Serverlandschaft"
+    }
+  ]
+}

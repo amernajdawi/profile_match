@@ -461,8 +461,17 @@ if st.button("Match Project with Team CVs", type="primary"):
                                 
                                 # Fall back to hard-coded employees if none found
                                 if not matched_employees or len(matched_employees) == 0:
-                                    st.warning("No employees found in the response. Cannot proceed with employee assignment.")
-                                    st.info("Please try again with a different project description or check your CV data.")
+                                    st.warning("No employees found in the CV matching response. Cannot proceed with employee assignment for past project analysis.")
+                                    st.info("Please try again with a different project description or check your CV data and the AI's output format.")
+                                    
+                                    # Display the raw response for debugging this specific error
+                                    st.markdown("### Raw CV Matching Response (for debugging 'Matched employees extracted: 0'):")
+                                    st.text_area(
+                                        "CV Matching AI Output:", 
+                                        value=response, 
+                                        height=300,
+                                        key="debug_cv_matching_response_for_extraction_error"
+                                    )
                                     st.stop()  # Stop execution of the current app run
                                 
                                 # Post-process the response to add matched employees to each project
@@ -578,9 +587,14 @@ if "last_matching_result" in st.session_state:
                     st.session_state.extracted_cv_json_list = cv_json_list
                     st.success(f"Found {len(cv_json_list)} suitable employee CV(s)")
                 else:
-                    st.warning(
-                        "No CV data could be extracted from the response. This could be due to formatting issues in the AI response."
-                    )
+                    # Check if the AI explicitly stated no employees met the threshold
+                    no_match_message_pattern = r"No employees meet the required \\d+% skills match for customized CV generation\\."
+                    if re.search(no_match_message_pattern, st.session_state.last_matching_result):
+                        st.info(f"No employees met the {min_match_percentage}% skills match threshold for customized CV generation.")
+                    else:
+                        st.warning(
+                            "No CV data could be extracted from the response. This could be due to formatting issues in the AI response, or no employees meeting the threshold without explicit notification."
+                        )
 
                     if debug_for_extraction:
                         st.markdown("### Response for debugging:")
