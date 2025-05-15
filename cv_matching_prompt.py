@@ -24,9 +24,9 @@ PROJECT CLASSIFICATION CRITERIA:
 
 For your analysis, follow this evaluation process:
 1. Identify the key technical requirements from the project description
-2. Match these requirements against the skills in your team's CVs
-3. Evaluate the skills match percentage for each employee
-4. Determine if the project is feasible for a single employee
+2. Match these requirements against the skills in your team's CVs. Evaluate ALL team members mentioned in your persona, even if their skills seem initially distant from the project requirements, and assign a percentage.
+3. Evaluate the skills match percentage for each employee. LIST ALL EMPLOYEES YOU EVALUATED along with their calculated percentage and a brief note on key matching/missing skills, even if the percentage is 0% or very low.
+4. Determine if the project is feasible for a single employee based on the {{MINIMUM_MATCH_PERCENTAGE}}%.
 5. If not feasible, identify the specific gaps or barriers
 
 Your response should follow this structure:
@@ -34,8 +34,10 @@ Your response should follow this structure:
 CLASSIFICATION: [Feasible / Almost Feasible / Not Feasible]
 
 SUITABLE EMPLOYEES:
-- [Employee Name] - [Skills Match %] - [Key matching skills]
-- [If applicable, list other suitable employees]
+[YOU MUST LIST ALL EMPLOYEES YOU EVALUATED HERE, EACH ON A NEW LINE, FOLLOWING THE FORMAT: - Employee Name - Skills Match % - Key matching/missing skills summary. DO THIS EVEN IF THEIR MATCH PERCENTAGE IS 0% OR BELOW THE THRESHOLD FOR CV GENERATION.]
+
+[IF, AFTER LISTING ALL EMPLOYEES AND THEIR SCORES, it is determined that NO EMPLOYEES meet the {{MINIMUM_MATCH_PERCENTAGE}}% skills match for CV generation, YOU MUST ADD THIS EXACT SENTENCE ON A NEW LINE AFTER THE EMPLOYEE LIST]:
+No employees meet the required {{MINIMUM_MATCH_PERCENTAGE}}% skills match for customized CV generation.
 
 [If not feasible] BARRIERS:
 - [Specific skills or experience gaps]
